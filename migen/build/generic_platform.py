@@ -360,6 +360,12 @@ class GenericPlatform:
             self.constraint_manager.get_io_signals(),
             create_clock_domains=False, **kwargs)
 
+    def get_hierarchial_verilog(self, fragment, **kwargs):
+        return verilog.convert_hierarchial(
+            fragment,
+            self.constraint_manager.get_io_signals(),
+            create_clock_domains=False, **kwargs)
+
     def get_edif(self, fragment, cell_library, vendor, device, **kwargs):
         return edif.convert(
             fragment,

@@ -372,3 +372,87 @@ def convert(fi, ios=None, name="top",
     r.set_main_source(src)
 
     return r
+
+from icecream import ic
+import migen.fhdl.specials as specials
+from migen.fhdl.structure import _Value
+from migen.fhdl.tools import list_targets, list_inputs
+
+def convert_hierarchial(module, ios=None,
+                        name="top",
+                        special_overrides=dict(),
+                        attr_translate=DummyAttrTranslate(),
+                        create_clock_domains=True,
+                        display_run=False,
+                        result=dict()):
+
+    inst_names = set()
+    inst_names.add(None)
+    module_type = module.__class__.__name__
+    ic(module, module_type)
+
+    inputs  = set()
+    targets = set()
+    for domain, stmts in module._fragment.sync.items():
+        for stmt in stmts:
+            inputs  = inputs.union(list_inputs(stmt))
+            targets = targets.union(list_targets(stmt))
+
+    for stmt in module._fragment.comb:
+        inputs  = inputs.union(list_inputs(stmt))
+        targets = targets.union(list_targets(stmt))
+
+    # traverse depth first so that all submodules
+    # are generated first, before they are used
+    for subname, submod in module._submodules:
+        inst_name = subname
+        submod_type = submod.__class__.__name__
+        if inst_name is None:
+            n = 0
+        while inst_name in inst_names:
+            inst_name = submod_type.lower() + f"_{n}"
+            n += 1
+        inst_names.add(inst_name)
+
+        io     = set()
+        items  = []
+        fields = vars(submod)
+        for field in fields:
+            if field.startswith('_'):
+                continue
+            fvalue = fields[field]
+            if isinstance(fvalue, list):
+                io = io.union(fvalue)
+                n = 0
+                for sig in fvalue:
+                    if sig.name_override:
+                        sig_name = sig.name_override
+                    else:
+                        sig_name = field + str(n)
+                        n += 1
+
+                    if sig in targets and sig in inputs:
+                        items.append(specials.Instance.InOut(sig_name, sig))
+                    elif sig in targets:
+                        items.append(specials.Instance.Input(sig_name, sig))
+                    else:
+                        items.append(specials.Instance.Output(sig_name, sig))
+                    
+            elif isinstance(fvalue, _Value):
+                io.add(fvalue)
+            else:
+                print(f"Warning: ignoring unknown field {field} in instance {subname}")
+        convert_hierarchial(submod, io, inst_name, special_overrides, attr_translate, create_clock_domains, display_run, result)
+
+        inst = specials.Instance(submod_type)
+        inst.items = items
+
+        module.specials += inst
+
+    module._submodules = []
+
+    if not module_type in result:
+        r = convert(module, ios, module_type, special_overrides, attr_translate, create_clock_domains, display_run)
+        result[module_type] = r        
+
+    return result
