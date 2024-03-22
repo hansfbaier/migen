@@ -52,7 +52,7 @@ def test_hierarchial():
     im = ParentModule()
     r = convert_hierarchial(im, set(im.inputs + im.outputs))
     fnames = []
-    for k,v in r.items():
+    for k, v in r.items():
         fname = k + ".v"
         fnames.append(fname)
         v.write(fname)

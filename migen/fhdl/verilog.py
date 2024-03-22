@@ -373,7 +373,6 @@ def convert(fi, ios=None, name="top",
 
     return r
 
-from icecream import ic
 import migen.fhdl.specials as specials
 from migen.fhdl.structure import _Value
 from migen.fhdl.tools import list_targets, list_inputs
