@@ -391,7 +391,6 @@ def convert_hierarchial(module, ios=None,
     inst_names = set()
     inst_names.add(None)
     module_type = make_module_type(module)
-    ic(module, module_type)
 
     inputs  = set()
     targets = set()
