@@ -409,6 +409,8 @@ def convert_hierarchial(module, ios=None,
     for subname, submod in module._submodules:
         inst_name = subname
         submod_type = make_module_type(submod)
+        submod_domains = set(submod._fragment.sync.keys())
+
         if inst_name is None:
             n = 0
         while inst_name in inst_names:
@@ -418,6 +420,10 @@ def convert_hierarchial(module, ios=None,
 
         io     = set()
         items  = []
+        for cd in submod_domains:
+            items.append(specials.Instance.Input(cd + "_clk", ClockSignal(cd)))
+            items.append(specials.Instance.Input(cd + "_rst", ResetSignal(cd)))
+
         fields = vars(submod)
         for field in fields:
             if field.startswith('_'):
