@@ -386,9 +386,11 @@ def convert_hierarchial(module, ios=None,
                         display_run=False,
                         result=dict()):
 
+    make_module_type = lambda module: module.__class__.__name__ + hex(id(module)).replace("0x", "_")
+
     inst_names = set()
     inst_names.add(None)
-    module_type = module.__class__.__name__
+    module_type = make_module_type(module)
     ic(module, module_type)
 
     inputs  = set()
@@ -406,7 +408,7 @@ def convert_hierarchial(module, ios=None,
     # are generated first, before they are used
     for subname, submod in module._submodules:
         inst_name = subname
-        submod_type = submod.__class__.__name__
+        submod_type = make_module_type(submod)
         if inst_name is None:
             n = 0
         while inst_name in inst_names:
