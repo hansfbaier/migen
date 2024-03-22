@@ -420,6 +420,15 @@ def convert_hierarchial(module, ios=None,
         for field in fields:
             if field.startswith('_'):
                 continue
+
+            def add_sig(sig_name, sig):
+                if sig in targets and sig in inputs:
+                    items.append(specials.Instance.InOut(sig_name, sig))
+                elif sig in targets:
+                    items.append(specials.Instance.Input(sig_name, sig))
+                elif sig in inputs:
+                    items.append(specials.Instance.Output(sig_name, sig))
+
             fvalue = fields[field]
             if isinstance(fvalue, list):
                 io = io.union(fvalue)
@@ -430,18 +439,15 @@ def convert_hierarchial(module, ios=None,
                     else:
                         sig_name = field + str(n)
                         n += 1
-
-                    if sig in targets and sig in inputs:
-                        items.append(specials.Instance.InOut(sig_name, sig))
-                    elif sig in targets:
-                        items.append(specials.Instance.Input(sig_name, sig))
-                    else:
-                        items.append(specials.Instance.Output(sig_name, sig))
-                    
+                    add_sig(sig_name, sig)                    
             elif isinstance(fvalue, _Value):
                 io.add(fvalue)
+                sig = fvalue
+                sig_name = sig.name_override if sig.name_override else field
+                add_sig(sig_name, sig)
             else:
                 print(f"Warning: ignoring unknown field {field} in instance {subname}")
+
         convert_hierarchial(submod, io, inst_name, special_overrides, attr_translate, create_clock_domains, display_run, result)
 
         inst = specials.Instance(submod_type)
