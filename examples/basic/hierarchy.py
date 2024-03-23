@@ -63,7 +63,7 @@ class ChildModule(Module):
 
 def test_hierarchial():
     im = ParentModule()
-    r = convert_hierarchial(im, set(im.inputs + im.outputs))
+    r = convert_hierarchial(im, set(im.inputs + im.outputs), name="ParentModule")
     fnames = []
     for k, v in r.items():
         fname = k + ".v"

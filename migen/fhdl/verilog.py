@@ -473,9 +473,9 @@ def convert_hierarchial(module, ios=None,
     # de-duplicate modules: As soon as a second module exists with the same 
     # code, use the existing module
     mod_hash = make_hash(module_body)
-    mod2hash[module_type] = mod_hash
+    mod2hash[name] = mod_hash
     if not mod_hash in hash2mod:
-        hash2mod[mod_hash] = module_type
-        result[module_type] = r
+        hash2mod[mod_hash] = name
+        result[name] = r
 
     return result
