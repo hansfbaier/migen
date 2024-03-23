@@ -376,6 +376,10 @@ def convert(fi, ios=None, name="top",
 import migen.fhdl.specials as specials
 from migen.fhdl.structure import _Value
 from migen.fhdl.tools import list_targets, list_inputs
+import hashlib
+
+def make_hash(str):
+    return hashlib.sha256(str.encode('utf-8')).hexdigest()
 
 def convert_hierarchial(module, ios=None,
                         name=None,
@@ -383,12 +387,11 @@ def convert_hierarchial(module, ios=None,
                         attr_translate=DummyAttrTranslate(),
                         create_clock_domains=True,
                         display_run=False,
+                        hash2mod=dict(), mod2hash=dict(),
                         result=dict()):
 
     make_module_type = lambda module: module.__class__.__name__ + hex(id(module)).replace("0x", "_")
 
-    inst_names = set()
-    inst_names.add(None)
     module_type = make_module_type(module)
 
     if name is None:
@@ -413,11 +416,7 @@ def convert_hierarchial(module, ios=None,
         submod_domains = set(submod._fragment.sync.keys())
 
         if inst_name is None:
-            n = 0
-        while inst_name in inst_names:
-            inst_name = submod_type.lower() + f"_{n}"
-            n += 1
-        inst_names.add(inst_name)
+            inst_name = submod_type.lower()
 
         io     = set()
         items  = []
@@ -457,17 +456,26 @@ def convert_hierarchial(module, ios=None,
             else:
                 print(f"Warning: ignoring unknown field {field} in instance {subname}")
 
-        convert_hierarchial(submod, io, None, special_overrides, attr_translate, create_clock_domains, display_run, result)
+        convert_hierarchial(submod, io, submod_type, special_overrides, attr_translate, create_clock_domains, display_run, hash2mod, mod2hash, result)
 
-        inst = specials.Instance(of=submod_type, name=inst_name)
+        inst_mod_type = hash2mod[mod2hash[submod_type]]
+        inst = specials.Instance(of=inst_mod_type, name=inst_name)
         inst.items = items
 
         module.specials += inst
 
     module._submodules = []
 
-    if not module_type in result:
-        r = convert(module, ios, module_type, special_overrides, attr_translate, create_clock_domains, display_run)
-        result[module_type] = r        
+    r = convert(module, ios, name, special_overrides, attr_translate, create_clock_domains, display_run)
+
+    # cut off module header with its name, just compare contents in hash
+    module_body = "\n".join(str(r).split('\n')[2:])
+    # de-duplicate modules: As soon as a second module exists with the same 
+    # code, use the existing module
+    mod_hash = make_hash(module_body)
+    mod2hash[module_type] = mod_hash
+    if not mod_hash in hash2mod:
+        hash2mod[mod_hash] = module_type
+        result[module_type] = r
 
     return result
