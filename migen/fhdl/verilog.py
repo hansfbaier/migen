@@ -378,7 +378,7 @@ from migen.fhdl.structure import _Value
 from migen.fhdl.tools import list_targets, list_inputs
 
 def convert_hierarchial(module, ios=None,
-                        name="top",
+                        name=None,
                         special_overrides=dict(),
                         attr_translate=DummyAttrTranslate(),
                         create_clock_domains=True,
@@ -390,6 +390,9 @@ def convert_hierarchial(module, ios=None,
     inst_names = set()
     inst_names.add(None)
     module_type = make_module_type(module)
+
+    if name is None:
+        name = module_type
 
     inputs  = set()
     targets = set()
@@ -454,9 +457,9 @@ def convert_hierarchial(module, ios=None,
             else:
                 print(f"Warning: ignoring unknown field {field} in instance {subname}")
 
-        convert_hierarchial(submod, io, inst_name, special_overrides, attr_translate, create_clock_domains, display_run, result)
+        convert_hierarchial(submod, io, None, special_overrides, attr_translate, create_clock_domains, display_run, result)
 
-        inst = specials.Instance(submod_type)
+        inst = specials.Instance(of=submod_type, name=inst_name)
         inst.items = items
 
         module.specials += inst
